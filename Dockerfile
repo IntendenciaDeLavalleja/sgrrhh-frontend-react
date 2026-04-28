@@ -1,19 +1,25 @@
 # =======================================================
 # Stage 1: Build
-# El frontend usa URLs relativas (/api/hr), no necesita
-# VITE_* vars en build time. El proxy hacia el backend
-# se configura en nginx en runtime con BACKEND_URL.
+# Vite hornea las VITE_* env vars en build time.
+# En Coolify: agregar VITE_API_URL como Build Variable.
+# Docker manual: --build-arg VITE_API_URL=https://api.sgrrhh.lavalleja.uy/api
 # =======================================================
 FROM node:20-alpine AS builder
 
 WORKDIR /app
 
 # Instalar dependencias primero (capa cacheada)
-COPY package.json package-lock.json ./
+COPY package.json package-lock.json* ./
 RUN npm ci
 
 # Copiar código fuente
 COPY . .
+
+# VITE_API_URL es requerida en build time.
+# Debe apuntar a la URL pública del backend Flask + /api
+# Ejemplo: https://api.sgrrhh.lavalleja.uy/api
+ARG VITE_API_URL
+ENV VITE_API_URL=$VITE_API_URL
 
 RUN npm run build
 
@@ -22,14 +28,11 @@ RUN npm run build
 # =======================================================
 FROM nginx:alpine
 
-# Instalar gettext para envsubst (reemplaza ${BACKEND_URL} en runtime)
-RUN apk add --no-cache gettext
-
 # Eliminar config por defecto de nginx
 RUN rm /etc/nginx/conf.d/default.conf
 
-# Copiar nginx config como template (BACKEND_URL se inyecta en runtime)
-COPY nginx.conf /etc/nginx/conf.d/default.conf.template
+# Copiar nuestra config (gzip + cache + SPA fallback + health check)
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Copiar assets compilados del stage builder
 COPY --from=builder /app/dist /usr/share/nginx/html
@@ -37,9 +40,7 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 EXPOSE 80
 
 # Healthcheck para Coolify / Docker
-HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD wget --spider -q http://localhost/health || exit 1
 
-# envsubst sustituye solo ${BACKEND_URL} (no las variables propias de nginx)
-CMD ["/bin/sh", "-c", \
-  "envsubst '${BACKEND_URL}' < /etc/nginx/conf.d/default.conf.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"]
+CMD ["nginx", "-g", "daemon off;"]

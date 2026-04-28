@@ -167,8 +167,20 @@ export function LoginPage() {
         setStep('twofa')
       }
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
-      setError(msg ?? 'Error al iniciar sesion')
+      const e = err as { message?: string; code?: string; response?: { status?: number; data?: { error?: string } } }
+      const apiError = e?.response?.data?.error
+      const status = e?.response?.status
+      let msg: string
+      if (apiError) {
+        msg = apiError
+      } else if (status) {
+        msg = `Error del servidor (HTTP ${status})`
+      } else if (e?.code === 'ERR_NETWORK' || e?.message === 'Network Error') {
+        msg = 'No se puede conectar con el servidor'
+      } else {
+        msg = e?.message || 'Error al iniciar sesion'
+      }
+      setError(msg)
       newCaptcha()
     } finally {
       setLoading(false)
@@ -189,8 +201,20 @@ export function LoginPage() {
         navigate('/dashboard', { replace: true })
       }
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
-      setError(msg ?? 'Codigo invalido o expirado')
+      const e = err as { message?: string; code?: string; response?: { status?: number; data?: { error?: string } } }
+      const apiError = e?.response?.data?.error
+      const status = e?.response?.status
+      let msg: string
+      if (apiError) {
+        msg = apiError
+      } else if (status) {
+        msg = `Error del servidor (HTTP ${status})`
+      } else if (e?.code === 'ERR_NETWORK' || e?.message === 'Network Error') {
+        msg = 'No se puede conectar con el servidor'
+      } else {
+        msg = e?.message || 'Codigo invalido o expirado'
+      }
+      setError(msg)
     } finally {
       setLoading(false)
     }
