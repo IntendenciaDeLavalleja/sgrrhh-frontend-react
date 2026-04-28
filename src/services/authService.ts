@@ -6,12 +6,14 @@ export interface LoginCredentials {
   email: string
   password: string
   captcha_answer: number
+  captcha_token: string
 }
 
 export interface LoginResponse {
   success: boolean
   message: string
   email_preview: string
+  pending_token: string
 }
 
 export interface Verify2FAResponse {
@@ -27,8 +29,8 @@ export interface Verify2FAResponse {
 }
 
 export const authService = {
-  getCaptcha: async (): Promise<{ question: string }> => {
-    const { data } = await api.get<{ question: string }>('/captcha')
+  getCaptcha: async (): Promise<{ question: string; token: string }> => {
+    const { data } = await api.get<{ question: string; token: string }>('/captcha')
     return data
   },
 
@@ -37,8 +39,8 @@ export const authService = {
     return data
   },
 
-  verify2FA: async (code: string): Promise<Verify2FAResponse> => {
-    const { data } = await api.post<Verify2FAResponse>('/verify-2fa', { code })
+  verify2FA: async (code: string, pendingToken: string): Promise<Verify2FAResponse> => {
+    const { data } = await api.post<Verify2FAResponse>('/verify-2fa', { code, pending_token: pendingToken })
     return data
   },
 }

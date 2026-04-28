@@ -118,8 +118,10 @@ export function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [captchaQuestion, setCaptchaQuestion] = useState('')
+  const [captchaToken, setCaptchaToken] = useState('')
   const [captchaAnswer, setCaptchaAnswer] = useState('')
   const [twoFACode, setTwoFACode] = useState('')
+  const [pendingToken, setPendingToken] = useState('')
   const [emailPreview, setEmailPreview] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -134,11 +136,13 @@ export function LoginPage() {
 
   const loadCaptcha = async () => {
     try {
-      const { question } = await authService.getCaptcha()
+      const { question, token } = await authService.getCaptcha()
       setCaptchaQuestion(question)
+      setCaptchaToken(token)
       setCaptchaAnswer('')
     } catch {
       setCaptchaQuestion('¿Cuánto es 4 + 7?')
+      setCaptchaToken('')
     }
   }
 
@@ -158,9 +162,11 @@ export function LoginPage() {
         email,
         password,
         captcha_answer: parseInt(captchaAnswer, 10),
+        captcha_token: captchaToken,
       })
       if (result.success) {
         setEmailPreview(result.email_preview)
+        setPendingToken(result.pending_token)
         setStep('twofa')
       }
     } catch (err: unknown) {
@@ -180,7 +186,7 @@ export function LoginPage() {
     setError(null)
     setLoading(true)
     try {
-      const result = await authService.verify2FA(twoFACode)
+      const result = await authService.verify2FA(twoFACode, pendingToken)
       if (result.success) {
         setAuth(result.access_token, result.expires_in, result.user)
         navigate('/dashboard', { replace: true })
