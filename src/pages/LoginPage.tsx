@@ -117,8 +117,8 @@ export function LoginPage() {
   const [step, setStep] = useState<Step>('credentials')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [captchaQuestion, setCaptchaQuestion] = useState('')
-  const [captchaToken, setCaptchaToken] = useState('')
+  const [captchaLeft, setCaptchaLeft] = useState(0)
+  const [captchaRight, setCaptchaRight] = useState(0)
   const [captchaAnswer, setCaptchaAnswer] = useState('')
   const [twoFACode, setTwoFACode] = useState('')
   const [pendingToken, setPendingToken] = useState('')
@@ -126,25 +126,19 @@ export function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const newCaptcha = () => {
+    setCaptchaLeft(Math.floor(Math.random() * 8) + 1)
+    setCaptchaRight(Math.floor(Math.random() * 8) + 1)
+    setCaptchaAnswer('')
+  }
+
   useEffect(() => {
     if (isAuthenticated) {
       navigate('/dashboard', { replace: true })
     } else {
-      loadCaptcha()
+      newCaptcha()
     }
   }, [])
-
-  const loadCaptcha = async () => {
-    try {
-      const { question, token } = await authService.getCaptcha()
-      setCaptchaQuestion(question)
-      setCaptchaToken(token)
-      setCaptchaAnswer('')
-    } catch {
-      setCaptchaQuestion('¿Cuánto es 4 + 7?')
-      setCaptchaToken('')
-    }
-  }
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -155,14 +149,17 @@ export function LoginPage() {
       setError('Debe responder el captcha')
       return
     }
+    if (parseInt(captchaAnswer, 10) !== captchaLeft + captchaRight) {
+      setError('Captcha incorrecto')
+      newCaptcha()
+      return
+    }
     setError(null)
     setLoading(true)
     try {
       const result = await authService.login({
         email,
         password,
-        captcha_answer: parseInt(captchaAnswer, 10),
-        captcha_token: captchaToken,
       })
       if (result.success) {
         setEmailPreview(result.email_preview)
@@ -172,7 +169,7 @@ export function LoginPage() {
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
       setError(msg ?? 'Error al iniciar sesion')
-      await loadCaptcha()
+      newCaptcha()
     } finally {
       setLoading(false)
     }
@@ -203,7 +200,7 @@ export function LoginPage() {
     setStep('credentials')
     setTwoFACode('')
     setError(null)
-    loadCaptcha()
+    newCaptcha()
   }
 
   return (
@@ -256,7 +253,9 @@ export function LoginPage() {
             <Field label="Verificacion de seguridad">
               <div className={styles.captchaBox}>
                 <div className={styles.captchaQuestion}>
-                  <span className={styles.captchaQuestionText}>{captchaQuestion}</span>
+                  <span className={styles.captchaQuestionText}>
+                    ¿Cuánto es {captchaLeft} + {captchaRight}?
+                  </span>
                 </div>
                 <Input
                   type="number"

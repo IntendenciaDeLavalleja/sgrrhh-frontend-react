@@ -5,8 +5,6 @@ const api = axios.create({ baseURL: '/api/auth' })
 export interface LoginCredentials {
   email: string
   password: string
-  captcha_answer: number
-  captcha_token: string
 }
 
 export interface LoginResponse {
