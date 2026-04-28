@@ -1,0 +1,37 @@
+# Dependencias instaladas localmente
+node_modules
+
+# Output del build
+dist
+
+# Metadatos de Git
+.git
+
+# Carpetas del backend y de ejemplos (no van en la imagen frontend)
+backend/
+example-backend/
+example-frontend/
+For-GitHub/
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Sistema operativo
+Thumbs.db
+.DS_Store
+
+# Archivos de entorno (no deben bakearse en la imagen)
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+
+# TypeScript build info
+*.tsbuildinfo
