@@ -1,6 +1,9 @@
 import axios from 'axios'
 
-const api = axios.create({ baseURL: '/api/auth' })
+const api = axios.create({
+  baseURL: '/api/auth',
+  timeout: 15000,
+})
 
 export interface LoginCredentials {
   email: string
@@ -8,10 +11,9 @@ export interface LoginCredentials {
 }
 
 export interface LoginResponse {
-  success: boolean
-  message: string
-  email_preview: string
+  requires_2fa: boolean
   pending_token: string
+  email_preview: string
 }
 
 export interface Verify2FAResponse {
@@ -38,7 +40,9 @@ export const authService = {
   },
 
   verify2FA: async (code: string, pendingToken: string): Promise<Verify2FAResponse> => {
-    const { data } = await api.post<Verify2FAResponse>('/verify-2fa', { code, pending_token: pendingToken })
+    const { data } = await api.post<Verify2FAResponse>('/verify-2fa', { code }, {
+      headers: { Authorization: `Bearer ${pendingToken}` },
+    })
     return data
   },
 }

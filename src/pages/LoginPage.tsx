@@ -161,7 +161,7 @@ export function LoginPage() {
         email,
         password,
       })
-      if (result.success) {
+      if (result.requires_2fa) {
         setEmailPreview(result.email_preview)
         setPendingToken(result.pending_token)
         setStep('twofa')
